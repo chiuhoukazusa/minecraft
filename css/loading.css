@@ -1,0 +1,254 @@
+body {
+    /* 清除默认边距 */
+    margin: 0;
+    padding: 0;
+    background: #d4cab7;
+}
+
+/* 所有加载动画都放在这个盒子里 */
+.content {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 300px auto;
+    width: 95vw;
+}
+
+section {
+    position: relative;
+    left: 33.3%;
+    right: 33.3%;
+    /* 弹性布局，垂直居中 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 33.3%;
+    min-width: 200px;
+    height: 200px;
+}
+
+section:nth-child(2n) {
+    
+}
+
+section:nth-child(2n+1) {
+
+}
+
+.loader-1 {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    animation: shadowExpandX 1s linear infinite;
+}
+
+/* x 偏移量 | y 偏移量 | 阴影模糊半径 | 阴影扩散半径 | 阴影颜色 */
+/* box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2); */
+
+/* 全局关键字，阴影位置 */
+/* box-shadow: inherit;
+box-shadow: initial;
+box-shadow: unset; */
+
+@keyframes shadowExpandX {
+    0% {
+        box-shadow: 0 0, 0 0;
+        color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* 生成的阴影盒子向两侧移动 */
+    100% {
+        box-shadow: -24px 0px, 24px 0px;
+        color: rgba(255, 255, 255, 0.8);
+    }
+}
+
+.loader-2 {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ff3d00;
+    box-shadow: 0px -24px #fff, 0px 24px #fff;
+    animation: rotate 2s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loader-3 {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: -24px 0px #fff, 24px 0px #fff;
+    animation: shadowColor 1s linear infinite;
+}
+
+@keyframes shadowColor {
+    0% {
+        box-shadow: -24px 0px #ff3d00,
+            24px 0px #fff;
+    }
+
+    50% {
+        background: #ff3d00;
+    }
+
+    100% {
+        box-shadow: -24px 0px #fff, 24px 0px #ff3d00;
+    }
+}
+
+.loader-4 {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: -48px 0px, -16px 0px,
+        16px 0px, 48px 0px;
+    color: #fff;
+    animation: shadowScale 2s linear infinite;
+}
+
+@keyframes shadowScale {
+
+    /* 逐个放大阴影盒子*/
+    0% {
+        box-shadow: -48px 0px 0px 4px, -16px 0px,
+            16px 0px, 48px 0px;
+    }
+
+    33% {
+        box-shadow: -48px 0px, -16px 0px 0px 4px,
+            16px 0px, 48px 0px;
+    }
+
+    66% {
+        box-shadow: -48px 0px, -16px 0px,
+            16px 0px 0px 4px, 48px 0px;
+    }
+
+    100% {
+        box-shadow: -48px 0px, -16px 0px,
+            16px 0px, 48px 0px 0px 4px;
+    }
+}
+
+.loader {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: -48px 0px, -16px 0px,
+        16px 0px, 48px 0px;
+    color: #fff;
+    animation: shadowJump 2s linear infinite;
+}
+
+@keyframes shadowJump {
+
+    0% {
+        box-shadow: -48px -12px, -16px 0px,
+            16px 0px, 48px 0px;
+    }
+
+    33% {
+        box-shadow: -48px 0px, -16px -12px,
+            16px 0px, 48px 0px;
+    }
+
+    66% {
+        box-shadow: -48px 0px, -16px 0px,
+            16px -12px, 48px 0px;
+    }
+
+    100% {
+        box-shadow: -48px 0px, -16px 0px,
+            16px 0px, 48px -12px;
+    }
+}
+
+.loader-6 {
+    display: inline-block;
+    position: absolute;
+    left: calc(50% - 100px);
+    width: 12px;
+    height: 12px;
+    background: red;
+    border-radius: 50%;
+    animation: shadowRolling 2s linear infinite;
+}
+
+@keyframes shadowRolling {
+    0% {
+        box-shadow: 0px 0 rgba(255, 255, 255, 0),
+            0px 0 rgba(255, 255, 255, 0),
+            0px 0 rgba(255, 255, 255, 0),
+            0px 0 rgba(255, 255, 255, 0);
+    }
+
+    12% {
+        box-shadow: 100px 0 white,
+            0px 0 rgba(255, 255, 255, 0),
+            0px 0 rgba(255, 255, 255, 0),
+            0px 0 rgba(255, 255, 255, 0);
+    }
+
+    25% {
+        box-shadow: 110px 0 white,
+            100px 0 white,
+            0px 0 rgba(255, 255, 255, 0),
+            0px 0 rgba(255, 255, 255, 0);
+    }
+
+    36% {
+        box-shadow: 120px 0 white,
+            110px 0 white,
+            100px 0 white,
+            0px 0 rgba(255, 255, 255, 0);
+    }
+
+    /* 将阴影盒子移到中间，并逐渐显示*/
+    50% {
+        box-shadow: 130px 0 white,
+            120px 0 white,
+            110px 0 white,
+            100px 0 white;
+    }
+
+    /* 将阴影盒子从中间移走，并逐渐消失*/
+
+    62% {
+        box-shadow: 200px 0 rgba(255, 255, 255, 0),
+            130px 0 white,
+            120px 0 white,
+            110px 0 white;
+    }
+
+    75% {
+        box-shadow: 200px 0 rgba(255, 255, 255, 0),
+            200px 0 rgba(255, 255, 255, 0),
+            130px 0 white,
+            120px 0 white;
+    }
+
+    87% {
+        box-shadow: 200px 0 rgba(255, 255, 255, 0),
+            200px 0 rgba(255, 255, 255, 0),
+            200px 0 rgba(255, 255, 255, 0),
+            130px 0 white;
+    }
+
+    100% {
+        box-shadow: 200px 0 rgba(255, 255, 255, 0),
+            200px 0 rgba(255, 255, 255, 0),
+            200px 0 rgba(255, 255, 255, 0),
+            200px 0 rgba(255, 255, 255, 0);
+    }
+}
