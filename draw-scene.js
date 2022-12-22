@@ -4,7 +4,7 @@ var cameraUp = [0, 1, 0];
 var cameraDir = [cameraTarget[0] - cameraPos[0], cameraTarget[1] - cameraPos[1], cameraTarget[2] - cameraPos[2]];
 
 function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkCoords, terraindata,
-  skyboxProgramInfo, skyboxTexture, skyboxPositionBuffer) {
+  skyboxProgramInfo, skyboxPositionBuffer, directionalLight) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
   gl.clearDepth(1.0); // Clear everything
   gl.enable(gl.DEPTH_TEST); // Enable depth testing
@@ -134,8 +134,10 @@ function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkC
     gl.drawArrays(gl.TRIANGLES, 0, 1 * 6);
   }
 
-  var chunkX = parseInt(cameraPos[0] / 12);
-  var chunkZ = parseInt(cameraPos[2] / 12);
+  var chunkX = parseInt(cameraPos[0] / 24);
+  var chunkZ = parseInt(cameraPos[2] / 24);
+
+  console.log(chunkX, chunkZ, cameraPos);
 
   if(chunkX < 0){
     chunkX = 0;
@@ -144,15 +146,15 @@ function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkC
     chunkZ = 0;
   }
 
-  if(!includesDeep(loadedChunkCoords, [chunkX + 5, chunkZ + 5]))
+  if(!includesDeep(loadedChunkCoords, [chunkX + 7, chunkZ + 7]))
   {
-    for(var i = chunkX - 10; i < chunkX + 10; i++)
+    for(var i = chunkX - 7; i < chunkX + 7; i++)
     {
-      for(var j = chunkZ - 10; j < chunkZ + 10; j++)
+      for(var j = chunkZ - 7; j < chunkZ + 7; j++)
       {
         if(i >= 0 && j >= 0 && !includesDeep(loadedChunkCoords, [i, j]))
         {
-          console.log("Loading chunk " + i + " " + j);
+          //console.log("Loading chunk " + i + " " + j);
           loadedChunkCoords.push([i, j]);
           buffers.push(initBuffers(gl, terraindata, i, j));
         }
@@ -160,10 +162,31 @@ function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkC
     }
   }
 
+  buffers.forEach(element => {
+
+    if(element.isLoaded)
+    {
+      if(parseInt(Math.abs(element.code[0] - chunkX)) + parseInt(Math.abs(element.code[1] - chunkZ)) > 15)
+      {
+        element.isLoaded = false;
+      }
+    }else
+    {
+      if(parseInt(Math.abs(element.code[0] - chunkX)) + parseInt(Math.abs(element.code[1] - chunkZ)) <= 15)
+      {
+        element.isLoaded = true;
+      }
+    }
+  });
+
   var loadedChunks = buffers.length;
 
   for(var i = 0; i < loadedChunks; i++)
   {
+    if(!buffers[i].isLoaded)
+    {
+      continue;
+    }
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute.
     setPositionAttribute(gl, buffers[i], programInfo);
@@ -204,6 +227,13 @@ function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkC
 
     // Bind the texture to texture unit 0
     gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.uniform3f(programInfo.uniformLocations.lightDirection,
+       directionalLight.direction[0], directionalLight.direction[1], directionalLight.direction[2]);
+    gl.uniform3f(programInfo.uniformLocations.AmbientIntensity,
+       directionalLight.ambientIntensity[0], directionalLight.ambientIntensity[1], directionalLight.ambientIntensity[2]);
+    gl.uniform3f(programInfo.uniformLocations.DiffuseIntensity,
+        directionalLight.diffuseIntensity[0], directionalLight.diffuseIntensity[1], directionalLight.diffuseIntensity[2]);
 
     // Tell the shader we bound the texture to texture unit 0
     gl.uniform1i(programInfo.uniformLocations.uSampler, 0);

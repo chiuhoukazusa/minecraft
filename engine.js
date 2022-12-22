@@ -21,7 +21,6 @@ function main(terraindata) {
     canvas.requestPointerLock(); 
   });
 
-
   // Only continue if WebGL is available and working
   if (gl === null) {
     alert(
@@ -37,6 +36,12 @@ function main(terraindata) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   // Clear the color buffer with specified clear color
   gl.clear(gl.COLOR_BUFFER_BIT);
+
+  var directionalLight = {
+    direction: [0.85, 0.8, 0.75],
+    ambientIntensity: [0.3, 0.3, 0.3],
+    diffuseIntensity: [1.0, 1.0, 1.0],
+  }
 
   //skybox shader program
   const skyboxvsSource = `
@@ -146,18 +151,24 @@ function main(terraindata) {
     uniform mat4 uModelMatrix;
     uniform mat4 uViewMatrix;
     uniform mat4 uProjectionMatrix;
+
+    uniform vec3 lightDirection;
+    uniform vec3 AmbientIntensity;
+    uniform vec3 DiffuseIntensity;
+
     varying highp vec2 vTextureCoord;
-    varying highp vec3 vLighting;
+    varying highp vec3 vNormal;
+    varying highp vec3 vlightDirection;
+    varying highp vec3 vAmbientIntensity;
+    varying highp vec3 vDiffuseIntensity;
+
     void main(void) {
       gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
       vTextureCoord = aTextureCoord;
-      // Apply lighting effect
-      highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
-      highp vec3 directionalLightColor = vec3(1, 1, 1);
-      highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
-      highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
-      highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-      vLighting = ambientLight + (directionalLightColor * directional);
+      vNormal = (uNormalMatrix * vec4(aVertexNormal, 1.0)).xyz;
+      vlightDirection = lightDirection;
+      vAmbientIntensity = AmbientIntensity;
+      vDiffuseIntensity = DiffuseIntensity;
     }
 `;
 
@@ -165,12 +176,25 @@ function main(terraindata) {
 
   const fsSource = `
     varying highp vec2 vTextureCoord;
-    varying highp vec3 vLighting;
+    varying highp vec3 vNormal;
+    varying highp vec3 vlightDirection;
+    varying highp vec3 vAmbientIntensity;
+    varying highp vec3 vDiffuseIntensity;
     uniform sampler2D uSampler;
     void main(void) {
       highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
-      gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
-      //gl_FragColor = vec4(color, 1.0);
+
+      // Apply lighting effect
+      highp vec3 Ia = vAmbientIntensity;
+      highp vec3 ambient = Ia * texelColor.rgb;
+      highp vec3 directionalLightColor = vDiffuseIntensity;
+      highp vec3 directionalVector = normalize(vlightDirection);
+      highp float directional = max(dot(vNormal, directionalVector), 0.0);
+      highp vec3 diffuse = texelColor.rgb * directionalLightColor * directional;
+
+      highp vec3 color = ambient + diffuse;
+
+      gl_FragColor = vec4(color, 1.0);
     }
 `;
 
@@ -197,6 +221,9 @@ function main(terraindata) {
       modelMatrix: gl.getUniformLocation(shaderProgram, "uModelMatrix"),
       viewMatrix: gl.getUniformLocation(shaderProgram, "uViewMatrix"),
       normalMatrix: gl.getUniformLocation(shaderProgram, "uNormalMatrix"),
+      lightDirection: gl.getUniformLocation(shaderProgram, "lightDirection"),
+      AmbientIntensity: gl.getUniformLocation(shaderProgram, "AmbientIntensity"),
+      DiffuseIntensity: gl.getUniformLocation(shaderProgram, "DiffuseIntensity"),
       uSampler: gl.getUniformLocation(shaderProgram, "uSampler"),
     },
   };
@@ -212,7 +239,7 @@ function main(terraindata) {
   loadedChunkCoords.push([0, 0]);
 
   // Load texture
-  const texture = loadTexture(gl, "Assets/texture.png");
+  const texture = loadTexture(gl, "Assets/texture-opaque.png");
 
   // Flip image pixels into the bottom-to-top order that WebGL expects.
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -226,7 +253,7 @@ function main(terraindata) {
     then = now;
 
     drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkCoords, terraindata,
-       skyboxProgramInfo, skyboxTexture, skyboxPositionBuffer);
+       skyboxProgramInfo, skyboxPositionBuffer, directionalLight);
 
     xMove = 0;
     yMove = 0;

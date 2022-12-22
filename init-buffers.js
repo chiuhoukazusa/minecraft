@@ -28,7 +28,35 @@ function initBuffers(gl, terraindata, _x, _z) {
         setBlock(gl, g_positions, x, y, z);
         setIndices(gl, g_indices, g_index);
         if(y == height){
-          setGrassTextureBuffer(gl, g_textureCoordinates);
+          if(Math.round(Math.random()*200) == 200)
+          {
+            setSoilTextureBuffer(gl, g_textureCoordinates);
+            //generate the tree
+            for(var i = 0; i < 6; i++){
+              g_index++;
+              setBlock(gl, g_positions, x, y + i + 1, z);
+              setIndices(gl, g_indices, g_index);
+              setWoodTextureBuffer(gl, g_textureCoordinates);
+            }
+            //generate the leaves
+            for(var leavesY = 5; leavesY < 8; leavesY++){
+              for(var leavesX = -2 + leavesY - 5; leavesX < 3 - leavesY + 5; leavesX++){
+                for(var leavesZ = -2 + leavesY - 5; leavesZ < 3 - leavesY + 5; leavesZ++){
+                  if(leavesX == 0 && leavesZ == 0 && leavesY != 7){
+                    continue;
+                  }
+                  g_index++;
+                  setBlock(gl, g_positions, x + leavesX, y + leavesY, z + leavesZ);
+                  setIndices(gl, g_indices, g_index);
+                  setLeavesTextureBuffer(gl, g_textureCoordinates);
+                }
+              }
+            }
+          }
+          else
+          {
+            setGrassTextureBuffer(gl, g_textureCoordinates);
+          }
         }else{
           setSoilTextureBuffer(gl, g_textureCoordinates);
         }
@@ -53,6 +81,8 @@ function initBuffers(gl, terraindata, _x, _z) {
     textureCoord: textureCoordBuffer,
     indices: indexBuffer,
     vertexCount: g_index * 36,
+    code: [_x, _z],
+    isLoaded: true,
   };
 }
 
@@ -264,6 +294,74 @@ function setSoilTextureBuffer(gl, textureCoordinates) {
   1.0 / 16.0, 0.0,
   1.0 / 16.0, 1.0 / 16.0,
   0.0, 1.0 / 16.0,)
+}
+
+function setWoodTextureBuffer(gl, textureCoordinates) {
+  textureCoordinates.push(
+  // Front
+  4.0 / 16.0, 1.0 / 16.0,
+  5.0 / 16.0, 1.0 / 16.0,
+  5.0 / 16.0, 2.0 / 16.0,
+  4.0 / 16.0, 2.0 / 16.0,
+  // Back
+  5.0 / 16.0, 1.0 / 16.0,
+  5.0 / 16.0, 2.0 / 16.0,
+  4.0 / 16.0, 2.0 / 16.0,
+  4.0 / 16.0, 1.0 / 16.0,
+  // Top
+  4.0 / 16.0, 2.0 / 16.0,
+  5.0 / 16.0, 2.0 / 16.0,
+  5.0 / 16.0, 3.0 / 16.0,
+  4.0 / 16.0, 3.0 / 16.0,
+  // Bottom
+  4.0 / 16.0, 0.0,
+  5.0 / 16.0, 0.0,
+  5.0 / 16.0, 1.0 / 16.0,
+  4.0 / 16.0, 1.0 / 16.0,
+  // Right
+  5.0 / 16.0, 1.0 / 16.0,
+  5.0 / 16.0, 2.0 / 16.0,
+  4.0 / 16.0, 2.0 / 16.0,
+  4.0 / 16.0, 1.0 / 16.0,
+  // Left
+  4.0 / 16.0, 1.0 / 16.0,
+  5.0 / 16.0, 1.0 / 16.0,
+  5.0 / 16.0, 2.0 / 16.0,
+  4.0 / 16.0, 2.0 / 16.0,)
+}
+
+function setLeavesTextureBuffer(gl, textureCoordinates) {
+  textureCoordinates.push(
+  // Front
+  14.0 / 16.0, 0.0,
+  15.0 / 16.0, 0.0,
+  15.0 / 16.0, 1.0 / 16.0,
+  14.0 / 16.0, 1.0 / 16.0,
+  // Back
+  14.0 / 16.0, 0.0,
+  15.0 / 16.0, 0.0,
+  15.0 / 16.0, 1.0 / 16.0,
+  14.0 / 16.0, 1.0 / 16.0,
+  // Top
+  14.0 / 16.0, 0.0,
+  15.0 / 16.0, 0.0,
+  15.0 / 16.0, 1.0 / 16.0,
+  14.0 / 16.0, 1.0 / 16.0,
+  // Bottom
+  14.0 / 16.0, 0.0,
+  15.0 / 16.0, 0.0,
+  15.0 / 16.0, 1.0 / 16.0,
+  14.0 / 16.0, 1.0 / 16.0,
+  // Right
+  14.0 / 16.0, 0.0,
+  15.0 / 16.0, 0.0,
+  15.0 / 16.0, 1.0 / 16.0,
+  14.0 / 16.0, 1.0 / 16.0,
+  // Left
+  14.0 / 16.0, 0.0,
+  15.0 / 16.0, 0.0,
+  15.0 / 16.0, 1.0 / 16.0,
+  14.0 / 16.0, 1.0 / 16.0,)
 }
 
 function setNormalBuffer(gl, vertexNormals) {
