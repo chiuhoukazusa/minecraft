@@ -15,7 +15,6 @@ function main(terraindata) {
   canvas.width = window.screen.width;
   canvas.height = window.screen.height;
   const gl = canvas.getContext("webgl");
-  console.log(gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS));
 
   //Lock the mouse to the canvas
   canvas.addEventListener("click", ev => {
@@ -39,41 +38,140 @@ function main(terraindata) {
   // Clear the color buffer with specified clear color
   gl.clear(gl.COLOR_BUFFER_BIT);
 
+  //skybox shader program
+  const skyboxvsSource = `
+    attribute vec4 a_position;
+    varying vec4 v_position;
+    void main() {
+      v_position = a_position;
+      gl_Position = a_position;
+      gl_Position.z = 1.0;
+    }
+  `
+  const skyboxfsSource = `
+    precision highp float;
+
+    uniform samplerCube u_skybox;
+    uniform mat4 u_viewDirectionProjectionInverse;
+    
+    varying vec4 v_position;
+    void main() {
+      vec4 t = u_viewDirectionProjectionInverse * v_position;
+      gl_FragColor = textureCube(u_skybox, normalize(t.xyz / t.w));
+    }
+  `
+
+  const skyboxShaderProgram = initShaderProgram(gl, skyboxvsSource, skyboxfsSource);
+
+  const skyboxProgramInfo = {
+    program: skyboxShaderProgram,
+    attribLocations: {
+      positionLocation: gl.getAttribLocation(skyboxShaderProgram, "a_position"),
+    },
+    uniformLocations: {
+      skyboxLocation: gl.getUniformLocation(skyboxShaderProgram, "u_skybox"),
+      viewDirectionProjectionInverseLocation: gl.getUniformLocation(skyboxShaderProgram, "u_viewDirectionProjectionInverse"),
+    },
+  };
+  // Create a buffer for positions
+  var skyboxPositionBuffer = gl.createBuffer();
+  // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
+  gl.bindBuffer(gl.ARRAY_BUFFER, skyboxPositionBuffer);
+  // Put the positions in the buffer
+  setSkybox(gl);
+
+  // Create a texture.
+  var skyboxTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
+
+  const faceInfos = [
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+      url: 'Assets/skybox/front.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+      url: 'Assets/skybox/back.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+      url: 'Assets/skybox/top.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+      url: 'Assets/skybox/bottom.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+      url: 'Assets/skybox/right.png',
+    },
+    {
+      target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+      url: 'Assets/skybox/left.png',
+    },
+  ];
+  faceInfos.forEach((faceInfo) => {
+    const {target, url} = faceInfo;
+
+    // Upload the canvas to the cubemap face.
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const width = 1024;
+    const height = 1024;
+    const format = gl.RGBA;
+    const type = gl.UNSIGNED_BYTE;
+
+    // setup each face so it's immediately renderable
+    gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
+
+    // Asynchronously load an image
+    const image = new Image();
+    image.src = url;
+    image.addEventListener('load', function() {
+      // Now that the image has loaded make copy it to the texture.
+      gl.bindTexture(gl.TEXTURE_CUBE_MAP, skyboxTexture);
+      gl.texImage2D(target, level, internalFormat, format, type, image);
+      gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+    });
+  });
+  gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+
   // Vertex shader program
   const vsSource = `
-  attribute vec4 aVertexPosition;
-  attribute vec3 aVertexNormal;
-  attribute vec2 aTextureCoord;
-  uniform mat4 uNormalMatrix;
-  uniform mat4 uModelMatrix;
-  uniform mat4 uViewMatrix;
-  uniform mat4 uProjectionMatrix;
-  varying highp vec2 vTextureCoord;
-  varying highp vec3 vLighting;
-  void main(void) {
-    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
-    vTextureCoord = aTextureCoord;
-    // Apply lighting effect
-    highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
-    highp vec3 directionalLightColor = vec3(1, 1, 1);
-    highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
-    highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
-    highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-    vLighting = ambientLight + (directionalLightColor * directional);
-  }
+    attribute vec4 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aTextureCoord;
+    uniform mat4 uNormalMatrix;
+    uniform mat4 uModelMatrix;
+    uniform mat4 uViewMatrix;
+    uniform mat4 uProjectionMatrix;
+    varying highp vec2 vTextureCoord;
+    varying highp vec3 vLighting;
+    void main(void) {
+      gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
+      vTextureCoord = aTextureCoord;
+      // Apply lighting effect
+      highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+      highp vec3 directionalLightColor = vec3(1, 1, 1);
+      highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
+      highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+      highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+      vLighting = ambientLight + (directionalLightColor * directional);
+    }
 `;
 
   // Fragment shader program
 
   const fsSource = `
-  varying highp vec2 vTextureCoord;
-  varying highp vec3 vLighting;
-  uniform sampler2D uSampler;
-  void main(void) {
-    highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
-    gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
-    //gl_FragColor = vec4(color, 1.0);
-  }
+    varying highp vec2 vTextureCoord;
+    varying highp vec3 vLighting;
+    uniform sampler2D uSampler;
+    void main(void) {
+      highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
+      gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
+      //gl_FragColor = vec4(color, 1.0);
+    }
 `;
 
   // Initialize a shader program; this is where all the lighting
@@ -127,7 +225,8 @@ function main(terraindata) {
     deltaTime = now - then;
     then = now;
 
-    drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkCoords, terraindata);
+    drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkCoords, terraindata,
+       skyboxProgramInfo, skyboxTexture, skyboxPositionBuffer);
 
     xMove = 0;
     yMove = 0;
@@ -264,13 +363,26 @@ function loadTexture(gl, url) {
   return texture;
 }
 
+//skybox cube
+function setSkybox(gl) {
+  var positions = new Float32Array(
+    [
+      -1.0, -1.0, 
+       1.0, -1.0, 
+      -1.0,  1.0, 
+      -1.0,  1.0,
+       1.0, -1.0,
+       1.0,  1.0,
+    ]);
+  gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+}
+
 
 function isPowerOf2(value) {
   return (value & (value - 1)) === 0;
 }
 
 function loadImage(url, callback) {
-  // 创建一个新的 Image 对象
   var img = new Image();
 
   img.onload = function(pixeldata) {
@@ -282,6 +394,5 @@ function loadImage(url, callback) {
     callback(pixeldata);
   };
 
-  // 设置图像的 src 属性以开始加载图像
   img.src = url;
 }

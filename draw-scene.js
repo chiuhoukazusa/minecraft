@@ -3,7 +3,8 @@ var cameraTarget = [0, 13, -1];
 var cameraUp = [0, 1, 0];
 var cameraDir = [cameraTarget[0] - cameraPos[0], cameraTarget[1] - cameraPos[1], cameraTarget[2] - cameraPos[2]];
 
-function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkCoords, terraindata) {
+function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkCoords, terraindata,
+  skyboxProgramInfo, skyboxTexture, skyboxPositionBuffer) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0); // Clear to black, fully opaque
   gl.clearDepth(1.0); // Clear everything
   gl.enable(gl.DEPTH_TEST); // Enable depth testing
@@ -22,7 +23,7 @@ function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkC
   const fieldOfView = (45 * Math.PI) / 180; // in radians
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
-  const zFar = 10000.0;
+  const zFar = 1000.0;
   const projectionMatrix = mat4.create();
 
   // note: glmatrix.js always has the first argument
@@ -89,6 +90,49 @@ function drawScene(gl, programInfo, buffers, texture, xMove, yMove, loadedChunkC
   const normalMatrix = mat4.create();
   mat4.invert(normalMatrix, viewMatrix * modelMatrix);
   mat4.transpose(normalMatrix, normalMatrix);
+
+  {
+    // Tell it to use our program (pair of shaders)
+    gl.useProgram(skyboxProgramInfo.program);
+
+    // Turn on the position attribute
+    gl.enableVertexAttribArray(skyboxProgramInfo.attribLocations.positionLocation);
+
+    // Bind the position buffer.
+    gl.bindBuffer(gl.ARRAY_BUFFER, skyboxPositionBuffer);
+
+    // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+    var size = 2;          // 2 components per iteration
+    var type = gl.FLOAT;   // the data is 32bit floats
+    var normalize = false; // don't normalize the data
+    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+    var offset = 0;        // start at the beginning of the buffer
+    gl.vertexAttribPointer(
+      skyboxProgramInfo.attribLocations.positionLocation, size, type, normalize, stride, offset);
+
+    var viewMatrixSky = mat4.create();
+    mat4.copy(viewMatrixSky, viewMatrix);
+
+    viewMatrixSky[12] = 0;
+    viewMatrixSky[13] = 0;
+    viewMatrixSky[14] = 0;
+
+    var viewDirectionProjectionMatrix = mat4.create();
+    mat4.multiply(viewDirectionProjectionMatrix, projectionMatrix, viewMatrixSky);
+    var viewDirectionProjectionInverseMatrix = mat4.create();
+    mat4.invert(viewDirectionProjectionInverseMatrix, viewDirectionProjectionMatrix);
+
+    // Set the uniforms
+    gl.uniformMatrix4fv(
+      skyboxProgramInfo.uniformLocations.viewDirectionProjectionInverseLocation, false,
+        viewDirectionProjectionInverseMatrix);
+
+    // Tell the shader to use texture unit 0 for u_skybox
+    gl.uniform1i(skyboxProgramInfo.uniformLocations.skyboxLocation, 0);
+
+    // Draw the geometry.
+    gl.drawArrays(gl.TRIANGLES, 0, 1 * 6);
+  }
 
   var chunkX = parseInt(cameraPos[0] / 12);
   var chunkZ = parseInt(cameraPos[2] / 12);

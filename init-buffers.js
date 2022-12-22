@@ -20,12 +20,18 @@ function initBuffers(gl, terraindata, _x, _z) {
   g_index = 0;
 
   console.log("start");
+
   for(var x = _x * 12; x < _x * 12 + 12; x++){
     for(var z = _z * 12; z < _z * 12 + 12; z++){
-      for(var y = 0; y < terraindata[(x + z * 2048) * 4] / 16; y++){
+      const height = parseInt(terraindata[(x + z * 2048) * 4] / 16);
+      for(var y = 0; y <= height; y++){
         setBlock(gl, g_positions, x, y, z);
         setIndices(gl, g_indices, g_index);
-        setTextureBuffer(gl, g_textureCoordinates);
+        if(y == height){
+          setGrassTextureBuffer(gl, g_textureCoordinates);
+        }else{
+          setSoilTextureBuffer(gl, g_textureCoordinates);
+        }
         setNormalBuffer(gl, g_vertexNormals);
         g_index++;
       }
@@ -48,6 +54,56 @@ function initBuffers(gl, terraindata, _x, _z) {
     indices: indexBuffer,
     vertexCount: g_index * 36,
   };
+}
+
+function initSkyboxBuffers(gl) {
+  var cubeVetices = [
+    -0.5, -0.5, -0.5,
+    0.5, -0.5, -0.5,
+    0.5,  0.5, -0.5,
+    0.5,  0.5, -0.5,
+   -0.5,  0.5, -0.5,
+   -0.5, -0.5, -0.5,
+
+   -0.5, -0.5,  0.5,
+    0.5, -0.5,  0.5,
+    0.5,  0.5,  0.5,
+    0.5,  0.5,  0.5,
+   -0.5,  0.5,  0.5,
+   -0.5, -0.5,  0.5,
+
+   -0.5,  0.5,  0.5,
+   -0.5,  0.5, -0.5,
+   -0.5, -0.5, -0.5,
+   -0.5, -0.5, -0.5,
+   -0.5, -0.5,  0.5,
+   -0.5,  0.5,  0.5,
+
+    0.5,  0.5,  0.5,
+    0.5,  0.5, -0.5,
+    0.5, -0.5, -0.5,
+    0.5, -0.5, -0.5,
+    0.5, -0.5,  0.5,
+    0.5,  0.5,  0.5,
+
+   -0.5, -0.5, -0.5,
+    0.5, -0.5, -0.5,
+    0.5, -0.5,  0.5,
+    0.5, -0.5,  0.5,
+   -0.5, -0.5,  0.5,
+   -0.5, -0.5, -0.5,
+
+   -0.5,  0.5, -0.5,
+    0.5,  0.5, -0.5,
+    0.5,  0.5,  0.5,
+    0.5,  0.5,  0.5,
+   -0.5,  0.5,  0.5,
+   -0.5,  0.5, -0.5,
+  ];
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cubeVetices), gl.STATIC_DRAW);
+  return positionBuffer;
 }
 
 //function updateBuffers
@@ -142,7 +198,7 @@ function setIndices(gl, indices, _index) {
   return indexBuffer;
 }
 
-function setTextureBuffer(gl, textureCoordinates) {
+function setGrassTextureBuffer(gl, textureCoordinates) {
   textureCoordinates.push(
   // Front
   0.0, 1.0 / 16.0,
@@ -174,6 +230,40 @@ function setTextureBuffer(gl, textureCoordinates) {
   1.0 / 16.0, 1.0 / 16.0,
   1.0 / 16.0, 2.0 / 16.0,
   0.0, 2.0 / 16.0,)
+}
+
+function setSoilTextureBuffer(gl, textureCoordinates) {
+  textureCoordinates.push(
+  // Front
+  0.0, 0.0,
+  1.0 / 16.0, 0.0,
+  1.0 / 16.0, 1.0 / 16.0,
+  0.0, 1.0 / 16.0,
+  // Back
+  0.0, 0.0,
+  1.0 / 16.0, 0.0,
+  1.0 / 16.0, 1.0 / 16.0,
+  0.0, 1.0 / 16.0,
+  // Top
+  0.0, 0.0,
+  1.0 / 16.0, 0.0,
+  1.0 / 16.0, 1.0 / 16.0,
+  0.0, 1.0 / 16.0,
+  // Bottom
+  0.0, 0.0,
+  1.0 / 16.0, 0.0,
+  1.0 / 16.0, 1.0 / 16.0,
+  0.0, 1.0 / 16.0,
+  // Right
+  0.0, 0.0,
+  1.0 / 16.0, 0.0,
+  1.0 / 16.0, 1.0 / 16.0,
+  0.0, 1.0 / 16.0,
+  // Left
+  0.0, 0.0,
+  1.0 / 16.0, 0.0,
+  1.0 / 16.0, 1.0 / 16.0,
+  0.0, 1.0 / 16.0,)
 }
 
 function setNormalBuffer(gl, vertexNormals) {
